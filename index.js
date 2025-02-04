@@ -21,24 +21,37 @@ const client = new MongoClient(uri, {
 
 async function run() {
     try {
-        // Connect the client to the server	(optional starting in v4.7)
         await client.connect();
 
-        const allStudentsCollection = client.db('student-info').collection('unicresult-Database');
+        const allStudentsCollection = client.db('unicresult-Database').collection('student-info');
 
         app.get("/allStudents", async (req, res) => {
-            const cursor = allStudentsCollection.find();
-            const result = await cursor.toArray();
-            console.log(result);
-            res.send(result);
-        })
+            try {
+                const students = await allStudentsCollection.find().toArray();
+                console.log("Students fetched from DB:", students);
+                res.json(students);
+            } catch (error) {
+                console.error("Error fetching students:", error);
+                res.status(500).json({ message: "Server error" });
+            }
+        });
 
-        // app.get('/allMeals/:id', async (req, res) => {
-        //     const id = req.params.id;
-        //     const query = { _id: new ObjectId(id) };
-        //     const result = await allMealsCollection.findOne(query);
-        //     res.send(result);
-        // })
+        app.get('/allStudents/:rollNumber', async (req, res) => {
+            const rollNumber = parseInt(req.params.rollNumber);
+            
+            try {
+                const student = await allStudentsCollection.findOne({ rollNumber: rollNumber });
+
+                if (!student) {
+                    return res.status(404).json({ message: 'Student not found' });
+                }
+
+                res.json(student);
+            } catch (error) {
+                console.error("Error fetching student by Roll Number:", error);
+                res.status(500).json({ message: 'Server error' });
+            }
+        });
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
